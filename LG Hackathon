@@ -1,0 +1,249 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import cohere
+
+
+
+
+
+class HighSchoolDataApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("High School Courses and GPA Tracker")
+        self.root.geometry("330x380")
+        self.root.resizable(width=False,height=False)
+
+        # Title Label
+        self.title_label = tk.Label(root, text="Enter High School Data", font=("Arial", 14))
+        self.title_label.grid(row=0, column=0)
+
+        # Year Selection Dropdown
+        self.year_label = tk.Label(root, text="Select Year:")
+        self.year_label.grid(row=1, column=0)
+        self.year_var = tk.StringVar(value="Sophomore")
+        self.year_options = ["Sophomore", "Junior", "Senior"]
+        self.year_menu = tk.OptionMenu(root, self.year_var, *self.year_options, command=self.update_year_data)
+        self.year_menu.grid(row=2, column=0)
+
+        # Courses Combobox
+        self.courses_label = tk.Label(root, text="Type to Select a Course:")
+        self.courses_label.grid(row=3, column=0)
+        self.course_combobox = ttk.Combobox(root, width=50)
+        self.course_combobox.grid(row=4, column=0)
+        self.course_combobox.bind('<KeyRelease>', self.filter_courses)
+
+        # Predefined list of courses
+        self.all_courses = [
+    "English 1",
+    "English 2",
+    "English 2H",
+    "English 3",
+    "AP English Language & Composition",
+    "English 3: American Experience",
+    "English 4",
+    "AP English Literature & Composition",
+    "Integrated Math 1",
+    "Integrated Math 2",
+    "Integrated Math 3",
+    "Pre-Calculus",
+    "Statistics",
+    "AP Statistics",
+    "AP Calculus AB",
+    "AP Calculus BC",
+    "AP Computer Science A",
+    "PE",  # general PE course
+    "Intro to Weight Training",  # Elective
+    "Concert Band",
+    "Symphonic Band",
+    "Wind Ensemble",
+    "Jazz Ensemble",
+    "AP Music Theory",
+    "Technical Theatre 1 - Technology & Design",
+    "Technical Theatre 2 - Stage Design",
+    "Technical Theatre 3 - Production Staff",
+    "Technical Theatre 4 Honors, Theatre Leadership",
+    "Theatre 1 - Beginning",
+    "Theatre 2 - Production & Performance",
+    "Theatre 3 - Directing for Stage",
+    "Theatre 4 Honors",
+    "Musical Theatre 1",
+    "Musical Theatre 2",
+    "Musical Theatre 3",
+    "Musical Theatre 4 Honors",
+    "Art 1 - Drawing and Painting",
+    "Art 2 - Drawing and Painting",
+    "Art 3 - Drawing and Painting",
+    "Art 4 - Drawing and Painting",
+    "3D Design 1 - Ceramics & Sculpture",
+    "3D Design 2 - Ceramics & Sculpture",
+    "3D Design 3 - Ceramics & Sculpture",
+    "AP Studio Art: 2D Design",
+    "Photography 1",
+    "Photography 2",
+    "World History",
+    "AP World History",
+    "US History",
+    "AP US History",
+    "US History: American Experience",
+    "American Government/Economics",
+    "AP Macroeconomics (+ American Government)",
+    "AP US Government & Politics (+ Economics)",
+    "Sociology",
+    "Psychology",
+    "AP Psychology",
+    "Biology",
+    "Chemistry",
+    "Physics",
+    "AP Physics 1",
+    "AP Physics 2",
+    "AP Biology",
+    "AP Chemistry",
+    "AP Environmental Science",
+    "Human Anatomy & Physiology",
+    "Introduction to Business Marketing",
+    "Business Accounting & Personal Finance 1",
+    "Business Accounting & Personal Finance 2",
+    "Intro to Engineering Design (IED)",
+    "Principles of Engineering (POE)",
+    "Digital Electronics (DE)",
+    "Engineering Development & Design (EDD)"
+    ]
+        self.course_combobox['values'] = self.all_courses
+
+        # Selected Courses List
+        self.selected_label = tk.Label(root, text="Selected Courses for Year:")
+        self.selected_label.grid(row=5, column=0)
+        self.selected_listbox = tk.Listbox(root, width=50, height=5)
+        self.selected_listbox.grid(row=6, column=0)
+
+        # Add Button
+        self.add_button = tk.Button(root, text="Add Selected Course", command=self.add_course)
+        self.add_button.place(x=30, y=227)
+
+        # Remove Button
+        self.remove_button = tk.Button(root, text="Remove Selected Course", command=self.remove_course)
+        self.remove_button.place(x=160, y=227)
+
+        # GPA Entry
+        self.gpa_label = tk.Label(root, text="GPA For The Year:")
+        self.gpa_label.place(x=105, y=255)
+        self.gpa_entry = tk.Entry(root, width=10)
+        self.gpa_entry.place(x=120, y=275)
+
+        # Submit Button
+        self.submit_button = tk.Button(root, text="Submit Data For This Year", command=self.submit_data)
+        self.submit_button.place(x=80, y=298)
+
+        # See Saved Data Button
+        self.see_button = tk.Button(root, text="See Saved Information", command=self.see_data)
+        self.see_button.place(x=90, y=325)
+
+        # Predict Colleges Button
+        self.predict_button = tk.Button(root, text="Predict Colleges", command=self.predict_colleges)
+        self.predict_button.place(x=100, y=355)
+
+        # Data Storage
+        self.data = {
+            "Sophomore": {"Courses": [], "GPA": None},
+            "Junior": {"Courses": [], "GPA": None},
+            "Senior": {"Courses": [], "GPA": None}
+        }
+
+    def filter_courses(self, event):
+        typed_text = self.course_combobox.get().lower()
+        filtered_courses = [course for course in self.all_courses if typed_text in course.lower()]
+        self.course_combobox['values'] = filtered_courses
+        self.course_combobox.icursor(len(typed_text))
+        self.course_combobox.event_generate("<FocusIn>")
+
+    def add_course(self):
+        course = self.course_combobox.get().strip()
+        if course:
+            current_year = self.year_var.get()
+            if course not in self.data[current_year]["Courses"]:
+                self.data[current_year]["Courses"].append(course)
+                self.update_year_data(current_year)
+                self.course_combobox.set("")
+
+    def remove_course(self):
+        selected_course = self.selected_listbox.curselection()
+        if selected_course:
+            current_year = self.year_var.get()
+            course = self.selected_listbox.get(selected_course)
+            self.selected_listbox.delete(selected_course)
+            self.data[current_year]["Courses"].remove(course)
+
+    def submit_data(self):
+        current_year = self.year_var.get()
+        gpa = self.gpa_entry.get().strip()
+
+        if not self.data[current_year]["Courses"]:
+            messagebox.showwarning("Input Error", f"Please enter courses for {current_year}.")
+            return
+
+        try:
+            gpa = float(gpa)
+            if gpa < 0 or gpa > 4.0:
+                raise ValueError("GPA must be between 0 and 4.0.")
+        except ValueError:
+            messagebox.showwarning("Input Error", "Please enter a valid GPA (0-4.0).")
+            return
+
+        self.data[current_year]["GPA"] = gpa
+        messagebox.showinfo("Data Submitted", f"GPA for {current_year} has been saved.")
+        self.gpa_entry.delete(0, tk.END)
+
+    def update_year_data(self, selected_year):
+        self.selected_listbox.delete(0, tk.END)
+        courses = self.data[selected_year]["Courses"]
+        for course in courses:
+            self.selected_listbox.insert(tk.END, course)
+        gpa = self.data[selected_year]["GPA"]
+        if gpa is not None:
+            self.gpa_entry.delete(0, tk.END)
+            self.gpa_entry.insert(0, str(gpa))
+        else:
+            self.gpa_entry.delete(0, tk.END)
+
+    def see_data(self):
+        summary = "High School Data Summary:\n\n"
+        for year, details in self.data.items():
+            courses = ", ".join(details["Courses"]) if details["Courses"] else "No courses entered"
+            gpa = str(details["GPA"]) if details["GPA"] is not None else "No GPA entered"
+            summary += f"{year} Year:\nCourses: {courses}\nGPA: {gpa}\n\n"
+        messagebox.showinfo("All Data", summary)
+
+    def predict_colleges(self):
+        # Initialize Cohere client
+        co = cohere.Client('bSdihNCxrfia79U3rV3ly9UOir7aKZIQhVdnEItR')  # Replace with your Cohere API key
+
+        # Prepare the input
+        user_data = {year: {"Courses": details["Courses"], "GPA": details["GPA"]} for year, details in self.data.items()}
+        input_text = f"I have the following high school data: {user_data}. Act as a professional high school counselor. Provide information of colleges I might be accepted into based on only this information."
+
+        # Generate prediction
+        response = co.generate(
+            model='command',
+            prompt=input_text,
+            max_tokens=200
+        )
+
+        # Show result
+        messagebox.showinfo("College Predictions", response.generations[0].text)
+
+        # Load a pre-trained model
+        generator = pipeline("text-generation", model="gptJ")
+        result = generator(input_text, max_length=500, num_return_sequences=1)
+
+        # Show result
+        messagebox.showinfo("College Predictions", result[0]['generated_text'])
+
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = HighSchoolDataApp(root)
+    root.mainloop()
+
+
+
