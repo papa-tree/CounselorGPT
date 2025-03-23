@@ -215,7 +215,7 @@ class HighSchoolDataApp:
 
     def predict_colleges(self):
         # Initialize Cohere client
-        co = cohere.Client('bSdihNCxrfia79U3rV3ly9UOir7aKZIQhVdnEItR')  # Replace with your Cohere API key
+        co = cohere.Client('') #Input your cohere key in the quotes
 
         # Prepare the input
         user_data = {year: {"Courses": details["Courses"], "GPA": details["GPA"]} for year, details in self.data.items()}
